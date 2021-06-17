@@ -5,9 +5,43 @@ import axios from "axios";
 import Modal from "react-modal";
 
 function PokeDex() {
+	const [pagination, setPagination] = useState('')
+  const [filter, setFilter] = useState('');
   const [pokemons, setPokemons] = useState([]);
   const [pokemonDetail, setPokemonDetail] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+	const [sortAscending, setSortAscending] = useState(true)
+
+	const sort = () => {
+		const newPokemons = [...pokemons]
+		if (sortAscending) {
+			newPokemons.sort((a, b) => a.name > b.name ? 1 : -1)
+		} else {
+			newPokemons.sort((a, b) => a.name > b.name ? -1 : 1)
+		}
+		setPokemons(newPokemons);
+		setSortAscending(!sortAscending)
+	} 
+
+	useEffect(() => {
+		axios.get('https://pokeapi.co/api/v2/pokemon').then((req) => {
+			setPokemons(req.data.results)
+			setPagination(req.data.next)
+		})
+	}, [])
+
+	const getDetails = (url) => {
+		axios.get(url).then((req) => {
+			setPokemonDetail(req.data)
+		})
+	}
+
+	const getMorePokemon = () => {
+		axios.get(pagination).then((req) => {
+			setPokemons(pokemons => [...pokemons, ...req.data.results])
+			setPagination(req.data.next)
+		})
+	}
 
   const customStyles = {
     content: {
@@ -55,14 +89,26 @@ function PokeDex() {
           <>
             <div className="App">
               <header className="App-header">
-                <b>Implement loader here</b>
+                {/* <b>Implement loader here</b> */}
+								<ReactLoading type='spin' color='red'/>
               </header>
             </div>
           </>
         ) : (
           <>
             <h1>Welcome to pokedex !</h1>
-            <b>Implement Pokedex list here</b>
+            {/* <b>Implement Pokedex list here</b> */}
+						<div className='pokemon-search'>
+							<div className='pokemon-search-detail'>Search</div>
+							<input type="text" name="name" onChange={e => setFilter(e.target.value.toLowerCase())} />
+						</div>
+						<button onClick={sort}>Sort</button>
+						{pokemons.filter(p => p.name.includes(filter)).map((p) => (
+							<div key={p.name}>
+								<div onClick={() => getDetails(p.url)} className='pokemon-name'>{p.name}</div>
+							</div>)
+						)}
+						<div onClick={() => getMorePokemon()} className='pokemon-more'>More...</div>
           </>
         )}
       </header>
@@ -75,7 +121,7 @@ function PokeDex() {
           }}
           style={customStyles}
         >
-          <div>
+          {/* <div>
             Requirement:
             <ul>
               <li>show the sprites front_default as the pokemon image</li>
@@ -84,7 +130,14 @@ function PokeDex() {
                 required
               </li>
             </ul>
-          </div>
+          </div> */}
+					<div>
+						<img className='pokemon-detail-img-center' src={pokemonDetail.sprites.front_default}/>
+						{pokemonDetail.stats.map(stats => (<div className='pokemon-detail-list'>
+							<div>{stats.stat.name}</div>
+							<div>{stats.base_stat}</div>
+						</div>))}
+					</div>
         </Modal>
       )}
     </div>
